@@ -1,10 +1,10 @@
 import numpy as np
 import pandas as pd
-from sklearn.metrics import confusion_matrix
+"""from sklearn.metrics import confusion_matrix
 from sklearn.model_selection  import train_test_split
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import accuracy_score
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report"""
 import time
 import datetime
 
@@ -42,11 +42,11 @@ for col in list(dataset.columns[:-1]):
         
 st = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
 print(st)
-
+"""
 X = dataset.drop('Label', axis=1)
 y = dataset['Label']
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20)  
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.70)  
 
 classifier = DecisionTreeClassifier()  
 classifier.fit(X_train, y_train)  
@@ -57,4 +57,20 @@ print(confusion_matrix(y_test, y_pred))
 print(classification_report(y_test, y_pred))  
 
 st = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
-print(st)
+print(st)"""
+
+
+correlation_data = dataset.corr(method = 'pearson', min_periods=3).abs().unstack()
+correlation_data = correlation_data.sort_values(ascending=False)
+a=[]
+count=0
+for col_a in dict(correlation_data):
+    if correlation_data[col_a] >= 0.95 and correlation_data[col_a] < 1:
+        count+=1
+        print(count)
+        a.append(col_a)
+    
+
+
+
+    
