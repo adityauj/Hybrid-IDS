@@ -1,15 +1,15 @@
 import numpy as np
 import pandas as pd
-from sklearn import decomposition
+from numpy.linalg import eig
 import time
 import datetime
 
 np.seterr(divide='ignore', invalid='ignore')
 
 st = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
-print(st)
+print("Started preprocessing\n\n",st)
 
-dataset = pd.read_csv("C:/Users/Aditya Ujeniya/.spyder-py3/sample.csv",low_memory=True,skipinitialspace=True)
+dataset = pd.read_csv("C:/Users/Aditya Ujeniya/.spyder-py3/dataset.csv",low_memory=True,skipinitialspace=True)
 dataset = dataset.loc[:,~dataset.columns.str.replace("(\.\d+)$","").duplicated()]
 dataset.iloc[:,-1] = dataset.iloc[:,-1].astype('category')
 
@@ -37,7 +37,7 @@ for col in list(dataset.columns[:-1]):
         
         
 st = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
-print(st)
+print("\nDone with preprocessing\nStarting Correlation\n\n",st)
 
 distinct_columns = set()
 
@@ -46,7 +46,7 @@ correlation_data = correlation_data.sort_values(ascending=False)
 
 list_columns = []
 for col_a in dict(correlation_data):
-    if correlation_data[col_a] >= 0.95 and correlation_data[col_a] < 1:
+    if correlation_data[col_a] >= 0.80 and correlation_data[col_a] < 1:
         list_columns.append(col_a)
 
 for col1, col2 in list_columns:
@@ -57,23 +57,40 @@ for cols in set(dataset.columns[:-1]):
     if(cols not in distinct_columns):
         dataset.drop(cols, axis=1, inplace = True)
         
-        
+len_of_columns = len(distinct_columns)        
+
 st = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
-print(st)
+print("\nDone with correlation\nStarting with PCA\n\n",st)
 
-print(distinct_columns)
+dataset.dropna(how="all", inplace=True)
 
+X = dataset.drop('Label', axis=1)
 labels = dataset[['Label']].copy()
-dataset.drop(dataset.columns[-1], axis = 1, inplace = True)
 
-pca = decomposition.PCA(n_components = 7)
-pca.fit(dataset)
-dataset= pca.transform(dataset)
+mean_of_dataset = np.mean(X.T, axis=1)
 
+centering_values = X - mean_of_dataset
+
+covariance_of_dataset = np.cov(centering_values.T)
+
+values, vectors = eig(covariance_of_dataset)
+
+eig_pairs = [(np.abs(values[i]), vectors[:,i]) for i in range(len(values))]
+eig_pairs.sort(key=lambda x: x[0], reverse=True)
+
+matrix_w = np.hstack((eig_pairs[0][1].reshape(len_of_columns,1), eig_pairs[1][1].reshape(len_of_columns,1), eig_pairs[2][1].reshape(len_of_columns,1), eig_pairs[3][1].reshape(len_of_columns,1), eig_pairs[4][1].reshape(len_of_columns,1), eig_pairs[5][1].reshape(len_of_columns,1), eig_pairs[6][1].reshape(len_of_columns,1)))
+transformed = matrix_w.T.dot(X.T)
+transformed = transformed.T
+
+dataset = transformed.real
 dataset = pd.DataFrame(dataset)
+
 dataset['Label'] = labels['Label']
+
+st = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
+print("\nDone with PCA\nStarting to write to file\n\n",st)
 
 dataset.to_csv("reduced.csv", sep=',');
 
 st = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
-print(st)
+print("\nDone with file writing\n\n",st)
