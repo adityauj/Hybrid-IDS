@@ -1,10 +1,6 @@
 import numpy as np
 import pandas as pd
-"""from sklearn.metrics import confusion_matrix
-from sklearn.model_selection  import train_test_split
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.metrics import accuracy_score
-from sklearn.metrics import classification_report"""
+from sklearn import decomposition
 import time
 import datetime
 
@@ -13,7 +9,7 @@ np.seterr(divide='ignore', invalid='ignore')
 st = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
 print(st)
 
-dataset = pd.read_csv("sample.csv",low_memory=False,skipinitialspace=True)
+dataset = pd.read_csv("C:/Users/Aditya Ujeniya/.spyder-py3/sample.csv",low_memory=True,skipinitialspace=True)
 dataset = dataset.loc[:,~dataset.columns.str.replace("(\.\d+)$","").duplicated()]
 dataset.iloc[:,-1] = dataset.iloc[:,-1].astype('category')
 
@@ -42,35 +38,42 @@ for col in list(dataset.columns[:-1]):
         
 st = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
 print(st)
-"""
-X = dataset.drop('Label', axis=1)
-y = dataset['Label']
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.70)  
-
-classifier = DecisionTreeClassifier()  
-classifier.fit(X_train, y_train)  
-
-y_pred = classifier.predict(X_test)  
-
-print(confusion_matrix(y_test, y_pred))  
-print(classification_report(y_test, y_pred))  
-
-st = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
-print(st)"""
-
+distinct_columns = set()
 
 correlation_data = dataset.corr(method = 'pearson', min_periods=3).abs().unstack()
 correlation_data = correlation_data.sort_values(ascending=False)
-a=[]
-count=0
+
+list_columns = []
 for col_a in dict(correlation_data):
     if correlation_data[col_a] >= 0.95 and correlation_data[col_a] < 1:
-        count+=1
-        print(count)
-        a.append(col_a)
-    
+        list_columns.append(col_a)
 
+for col1, col2 in list_columns:
+    distinct_columns.add(col1)
+    distinct_columns.add(col2)
 
+for cols in set(dataset.columns[:-1]):
+    if(cols not in distinct_columns):
+        dataset.drop(cols, axis=1, inplace = True)
+        
+        
+st = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
+print(st)
 
-    
+print(distinct_columns)
+
+labels = dataset[['Label']].copy()
+dataset.drop(dataset.columns[-1], axis = 1, inplace = True)
+
+pca = decomposition.PCA(n_components = 7)
+pca.fit(dataset)
+dataset= pca.transform(dataset)
+
+dataset = pd.DataFrame(dataset)
+dataset['Label'] = labels['Label']
+
+dataset.to_csv("reduced.csv", sep=',');
+
+st = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
+print(st)
